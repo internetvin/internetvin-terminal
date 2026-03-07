@@ -1,4 +1,4 @@
-# InternetVin Terminal
+# internetVin Terminal
 
 An embedded terminal for Obsidian with multi-tab support, wiki-link autocomplete, and drag-and-drop file paths.
 
@@ -17,7 +17,7 @@ An embedded terminal for Obsidian with multi-tab support, wiki-link autocomplete
 
 ### From Community Plugins
 1. Open Settings > Community Plugins > Browse
-2. Search for "InternetVin Terminal"
+2. Search for "internetVin Terminal"
 3. Click Install, then Enable
 
 ### Manual
@@ -28,7 +28,7 @@ An embedded terminal for Obsidian with multi-tab support, wiki-link autocomplete
 
 ## Usage
 
-Open the terminal from the command palette: search for "InternetVin Terminal" or use the ribbon icon.
+Open the terminal from the command palette: search for "internetVin Terminal" or use the ribbon icon.
 
 - Click **+** to open a new tab
 - Double-click a tab name to rename it
