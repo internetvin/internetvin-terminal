@@ -1,4 +1,4 @@
-import { Plugin, ItemView, WorkspaceLeaf, App, TFile, setIcon } from "obsidian";
+import { Plugin, ItemView, WorkspaceLeaf, App, TFile, setIcon, SuggestModal } from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import type { ChildProcess } from "child_process";
@@ -29,6 +29,7 @@ class WikiLinkAutocomplete {
   private dropdownEl: HTMLElement | null = null;
   private filterTimer: ReturnType<typeof setTimeout> | null = null;
   private containerEl: HTMLElement;
+  private previewEl: HTMLElement | null = null;
   private resizeDisposable: { dispose(): void } | null = null;
 
   constructor(app: App, terminal: Terminal, writeToShell: (data: string) => void, containerEl: HTMLElement) {
@@ -268,6 +269,8 @@ class WikiLinkAutocomplete {
         this.accept();
       });
     });
+
+    this.renderPreview();
   }
 
   private positionDropdown() {
@@ -313,9 +316,88 @@ class WikiLinkAutocomplete {
   }
 
   private removeDropdown() {
+    this.removePreview();
     if (this.dropdownEl) {
       this.dropdownEl.remove();
       this.dropdownEl = null;
+    }
+  }
+
+  private async renderPreview() {
+    const entry = this.results[this.selectedIndex];
+    if (!entry || !entry.isFile) {
+      this.removePreview();
+      return;
+    }
+
+    if (!this.previewEl) {
+      this.previewEl = document.createElement("div");
+      this.previewEl.className = "vin-wikilink-preview";
+      this.containerEl.appendChild(this.previewEl);
+    }
+
+    this.positionPreview();
+
+    const file = this.app.vault.getAbstractFileByPath(
+      entry.folder ? `${entry.folder}/${entry.name}.md` : `${entry.name}.md`
+    );
+    if (!file || !(file instanceof TFile)) {
+      this.previewEl.innerHTML = `<div class="vin-preview-empty">File not found</div>`;
+      return;
+    }
+
+    const content = await this.app.vault.cachedRead(file);
+    const lines = content.split("\n").slice(0, 10);
+    const preview = lines.join("\n");
+
+    const cache = this.app.metadataCache.getFileCache(file);
+    const tags = cache?.tags?.map(t => t.tag) ?? [];
+    const frontmatterTags = cache?.frontmatter?.tags ?? [];
+    const allTags = [...new Set([...tags, ...frontmatterTags])];
+
+    const resolved = (this.app.metadataCache as any).resolvedLinks ?? {};
+    let backlinkCount = 0;
+    for (const source of Object.keys(resolved)) {
+      if (resolved[source]?.[file.path]) backlinkCount++;
+    }
+
+    const modified = new Date(file.stat.mtime);
+    const dateStr = modified.toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric"
+    });
+
+    let html = `<div class="vin-preview-meta">`;
+    html += `<span class="vin-preview-date">${dateStr}</span>`;
+    html += `<span class="vin-preview-backlinks">${backlinkCount} backlink${backlinkCount !== 1 ? "s" : ""}</span>`;
+    html += `</div>`;
+    if (allTags.length > 0) {
+      html += `<div class="vin-preview-tags">${allTags.map(t => `<span class="vin-preview-tag">${this.escapeHtml(String(t))}</span>`).join("")}</div>`;
+    }
+    html += `<div class="vin-preview-content">${this.escapeHtml(preview)}</div>`;
+    this.previewEl.innerHTML = html;
+  }
+
+  private positionPreview() {
+    if (!this.previewEl || !this.dropdownEl) return;
+    const dropRect = this.dropdownEl.getBoundingClientRect();
+    const containerRect = this.containerEl.getBoundingClientRect();
+    const previewWidth = 280;
+
+    const rightSpace = containerRect.right - dropRect.right;
+    if (rightSpace >= previewWidth) {
+      this.previewEl.style.left = `${dropRect.right - containerRect.left + 4}px`;
+    } else {
+      this.previewEl.style.left = `${dropRect.left - containerRect.left - previewWidth - 4}px`;
+    }
+    this.previewEl.style.top = this.dropdownEl.style.top;
+    this.previewEl.style.bottom = this.dropdownEl.style.bottom;
+    this.previewEl.style.width = `${previewWidth}px`;
+  }
+
+  private removePreview() {
+    if (this.previewEl) {
+      this.previewEl.remove();
+      this.previewEl = null;
     }
   }
 
@@ -325,6 +407,7 @@ class WikiLinkAutocomplete {
 
   destroy() {
     if (this.filterTimer) clearTimeout(this.filterTimer);
+    this.removePreview();
     this.removeDropdown();
     this.resizeDisposable?.dispose();
   }
@@ -393,7 +476,8 @@ class TerminalSession {
     // The helper accepts resize commands so the shell reflows to fit the panel.
     const { spawn } = require("child_process");
     const path = require("path");
-    const helperScript = path.join(__dirname, "pty-helper.py");
+    const vaultBase = (app.vault.adapter as any).basePath as string;
+    const helperScript = path.join(vaultBase, ".obsidian", "plugins", "internetvin-terminal", "pty-helper.py");
 
     // Strip CLAUDECODE env var so Claude Code can be launched inside the terminal
     const { CLAUDECODE, ...cleanEnv } = process.env;
@@ -651,6 +735,19 @@ class TerminalSession {
   private shellEscape(p: string): string {
     if (/^[a-zA-Z0-9_.\/\-]+$/.test(p)) return p;
     return "'" + p.replace(/'/g, "'\\''") + "'";
+  }
+
+  captureOutput(): string {
+    const sel = this.terminal.getSelection();
+    if (sel && sel.trim().length > 0) return sel;
+    const buf = this.terminal.buffer.active;
+    const lines: string[] = [];
+    const start = Math.max(0, buf.length - 50);
+    for (let i = start; i < buf.length; i++) {
+      const line = buf.getLine(i)?.translateToString(true);
+      if (line !== undefined) lines.push(line);
+    }
+    return lines.join("\n").trimEnd();
   }
 
   fit() {
@@ -1399,6 +1496,73 @@ class TerminalView extends ItemView {
   }
 }
 
+// --- OutputCaptureModal ---
+
+interface CaptureOption {
+  label: string;
+  action: string;
+}
+
+class OutputCaptureModal extends SuggestModal<CaptureOption> {
+  private capturedText: string;
+
+  constructor(app: App, capturedText: string) {
+    super(app);
+    this.capturedText = capturedText;
+    this.setPlaceholder("Choose where to save terminal output...");
+  }
+
+  getSuggestions(): CaptureOption[] {
+    return [
+      { label: "Today's daily note", action: "daily" },
+      { label: "Current open note", action: "current" },
+      { label: "New note", action: "new" },
+    ];
+  }
+
+  renderSuggestion(option: CaptureOption, el: HTMLElement) {
+    el.createEl("div", { text: option.label });
+  }
+
+  async onChooseSuggestion(option: CaptureOption) {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const block = `\n## Terminal Capture — ${hh}:${mm}\n\n\`\`\`\n${this.capturedText}\n\`\`\`\n`;
+
+    if (option.action === "daily") {
+      const yyyy = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const dailyPath = `Daily Notes/${yyyy}-${mo}-${dd}.md`;
+
+      const exists = await this.app.vault.adapter.exists(dailyPath);
+      if (exists) {
+        await this.app.vault.adapter.append(dailyPath, block);
+      } else {
+        await this.app.vault.create(dailyPath, block.trimStart());
+      }
+    } else if (option.action === "current") {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile) {
+        await this.app.vault.adapter.append(activeFile.path, block);
+      }
+    } else if (option.action === "new") {
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      const yyyy = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const newPath = `Terminal Captures/${yyyy}-${mo}-${dd}-${hh}${mm}${ss}.md`;
+
+      const folderExists = await this.app.vault.adapter.exists("Terminal Captures");
+      if (!folderExists) {
+        await this.app.vault.createFolder("Terminal Captures");
+      }
+      await this.app.vault.create(newPath, block.trimStart());
+    }
+  }
+}
+
 // --- Plugin ---
 
 export default class TerminalPlugin extends Plugin {
@@ -1430,6 +1594,22 @@ export default class TerminalPlugin extends Plugin {
           const view = leaves[0].view as TerminalView;
           view.fullscreenManager?.toggle();
         }
+      },
+    });
+
+    this.addCommand({
+      id: "capture-terminal-output",
+      name: "Capture Terminal Output to Note",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "s" }],
+      callback: () => {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+        if (leaves.length === 0) return;
+        const view = leaves[0].view as TerminalView;
+        const session = view.activeSession;
+        if (!session) return;
+        const text = session.captureOutput();
+        if (!text.trim()) return;
+        new OutputCaptureModal(this.app, text).open();
       },
     });
 

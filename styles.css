@@ -802,3 +802,51 @@ body *::-webkit-scrollbar-thumb:hover,
   width: 14px;
   height: 14px;
 }
+
+/* Wiki-link autocomplete preview panel */
+.vin-wikilink-preview {
+  position: absolute;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 11px;
+  color: #aaa;
+  max-height: 220px;
+  overflow: hidden;
+  z-index: 1001;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+.vin-preview-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: #666;
+}
+.vin-preview-backlinks { color: #6080A0; }
+.vin-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.vin-preview-tag {
+  background: #222;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #7A9A6A;
+}
+.vin-preview-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+  color: #888;
+  max-height: 140px;
+  overflow: hidden;
+}
+.vin-preview-empty {
+  color: #555;
+  font-style: italic;
+}
