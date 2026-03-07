@@ -21,10 +21,10 @@ An embedded terminal for Obsidian with multi-tab support, wiki-link autocomplete
 3. Click Install, then Enable
 
 ### Manual
-1. Download `main.js`, `manifest.json`, `styles.css`, and `pty-helper.py` from the latest release
-2. Create a folder called `internetvin-terminal` in your vault's `.obsidian/plugins/` directory
-3. Place the downloaded files in that folder
-4. Enable the plugin in Settings > Community Plugins
+1. Download the repo as a zip (Code > Download ZIP) or clone it
+2. Move the folder into your vault's `.obsidian/plugins/` directory
+3. **Rename the folder to `internetvin-terminal`** (if you downloaded the zip, it will be named `internetvin-terminal-main` by default, and Obsidian won't load it unless the folder name matches exactly)
+4. Restart Obsidian, then enable the plugin in Settings > Community Plugins
 
 ## Usage
 
