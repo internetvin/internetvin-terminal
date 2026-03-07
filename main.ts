@@ -393,7 +393,7 @@ class TerminalSession {
     // The helper accepts resize commands so the shell reflows to fit the panel.
     const { spawn } = require("child_process");
     const path = require("path");
-    const helperScript = path.join(cwd, ".obsidian", "plugins", "internetvin-terminal", "pty-helper.py");
+    const helperScript = path.join(__dirname, "pty-helper.py");
 
     // Strip CLAUDECODE env var so Claude Code can be launched inside the terminal
     const { CLAUDECODE, ...cleanEnv } = process.env;
