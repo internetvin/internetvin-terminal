@@ -41,6 +41,17 @@ class WikiLinkAutocomplete {
     // Intercept keys when autocomplete is active.
     // Nothing echoes to shell while active - user sees their typing in the dropdown header.
     this.terminal.attachCustomKeyEventHandler((e: KeyboardEvent) => {
+      // Fix for non-US keyboards (e.g. Swiss/German): Alt+key combinations like
+      // Alt+G (@), Alt+5 ([), Alt+6 (]) are blocked by xterm.js in Electron's
+      // Shadow DOM context. Intercept and send directly, also triggering handleData
+      // so that [[ autocomplete still works.
+      if (e.type === "keydown" && e.altKey && !e.ctrlKey && !e.metaKey && e.key.length === 1) {
+        this.handleData(e.key);
+        this.writeToShell(e.key);
+        e.preventDefault();
+        return false;
+      }
+
       // Shift+Enter: send newline instead of carriage return
       if (e.type === "keydown" && e.key === "Enter" && e.shiftKey) {
         e.preventDefault();
