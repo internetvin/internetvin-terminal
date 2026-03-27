@@ -10,7 +10,7 @@
     "@xterm/addon-fit": "^0.10.0"
   },
   "devDependencies": {
-    "esbuild": "^0.21.0",
+    "esbuild": "^0.25.0",
     "obsidian": "latest",
     "typescript": "^5.4.0",
     "@types/node": "^20.0.0"

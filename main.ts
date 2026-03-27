@@ -4,6 +4,89 @@ import { FitAddon } from "@xterm/addon-fit";
 import type { ChildProcess } from "child_process";
 
 const VIEW_TYPE = "vin-terminal-view";
+let ptyHelperPath = "";
+
+const PTY_HELPER_PY = `\
+"""PTY helper for vin-terminal. Wraps zsh in a real PTY with resize support."""
+import os, select, signal, struct, fcntl, termios, pty
+
+def main():
+    cols = int(os.environ.get("VIN_TERM_COLS", "80"))
+    rows = int(os.environ.get("VIN_TERM_ROWS", "24"))
+    master, slave = pty.openpty()
+    fcntl.ioctl(master, termios.TIOCSWINSZ,
+                struct.pack("HHHH", rows, cols, 0, 0))
+    pid = os.fork()
+    if pid == 0:
+        os.close(master)
+        os.setsid()
+        fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
+        os.dup2(slave, 0)
+        os.dup2(slave, 1)
+        os.dup2(slave, 2)
+        if slave > 2:
+            os.close(slave)
+        os.execvp("/bin/zsh", ["/bin/zsh", "-i", "-l"])
+    os.close(slave)
+    def resize(c, r):
+        fcntl.ioctl(master, termios.TIOCSWINSZ,
+                    struct.pack("HHHH", r, c, 0, 0))
+        os.kill(pid, signal.SIGWINCH)
+    buf = b""
+    SEQ_START = b"\\x1b]R;"
+    SEQ_END = b"\\x07"
+    try:
+        while True:
+            rlist, _, _ = select.select([0, master], [], [])
+            if 0 in rlist:
+                data = os.read(0, 4096)
+                if not data:
+                    break
+                buf += data
+                while SEQ_START in buf:
+                    idx = buf.index(SEQ_START)
+                    end = buf.find(SEQ_END, idx)
+                    if end < 0:
+                        if idx > 0:
+                            os.write(master, buf[:idx])
+                        buf = buf[idx:]
+                        break
+                    if idx > 0:
+                        os.write(master, buf[:idx])
+                    seq = buf[idx + len(SEQ_START):end]
+                    buf = buf[end + 1:]
+                    try:
+                        parts = seq.split(b";")
+                        if len(parts) == 2:
+                            resize(int(parts[0]), int(parts[1]))
+                    except (ValueError, IndexError):
+                        pass
+                else:
+                    if buf:
+                        os.write(master, buf)
+                        buf = b""
+            if master in rlist:
+                try:
+                    data = os.read(master, 4096)
+                    if not data:
+                        break
+                    os.write(1, data)
+                except OSError:
+                    break
+    except Exception:
+        pass
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        os.waitpid(pid, 0)
+    except ChildProcessError:
+        pass
+
+if __name__ == "__main__":
+    main()
+`;
 
 // --- Theme helpers ---
 // Build an xterm.js ITheme from Obsidian's CSS variables at runtime.
@@ -672,9 +755,7 @@ class TerminalSession {
     // Spawn zsh inside a real PTY via Python helper.
     // The helper accepts resize commands so the shell reflows to fit the panel.
     const { spawn } = require("child_process");
-    const path = require("path");
-    const vaultBase = (app.vault.adapter as any).basePath as string;
-    const helperScript = path.join(vaultBase, ".obsidian", "plugins", "internetvin-terminal", "pty-helper.py");
+    const helperScript = ptyHelperPath;
 
     // Strip CLAUDECODE env var so Claude Code can be launched inside the terminal
     const { CLAUDECODE, ...cleanEnv } = process.env;
@@ -1864,6 +1945,16 @@ class OutputCaptureModal extends SuggestModal<CaptureOption> {
 
 export default class TerminalPlugin extends Plugin {
   async onload() {
+    // Ensure pty-helper.py exists in the plugin directory.
+    // BRAT and Obsidian's plugin installer only copy main.js, manifest.json,
+    // and styles.css, so we write it ourselves on every load.
+    const fs = require("fs");
+    const path = require("path");
+    const vaultBase = (this.app.vault.adapter as any).basePath as string;
+    const helperPath = path.join(vaultBase, this.manifest.dir, "pty-helper.py");
+    fs.writeFileSync(helperPath, PTY_HELPER_PY, { mode: 0o755 });
+    ptyHelperPath = helperPath;
+
     this.registerView(VIEW_TYPE, (leaf) => new TerminalView(leaf));
 
     this.addRibbonIcon("terminal", "Open Terminal", () => {
