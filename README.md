@@ -15,15 +15,10 @@ An embedded terminal for Obsidian with multi-tab support, wiki-link autocomplete
 
 ## Installation
 
-### From Community Plugins
-1. Open Settings > Community Plugins > Browse
-2. Search for "internetVin Terminal"
-3. Click Install, then Enable
-
-### Manual
-1. Download `internetvin-terminal.zip` from the [latest release](https://github.com/internetvin/internetvin-terminal/releases/latest)
-2. Unzip it and drag the `internetvin-terminal` folder into your vault's `.obsidian/plugins/`
-3. Restart Obsidian, then enable the plugin in Settings > Community Plugins
+1. Download **internetvin-terminal.zip** from the [latest release](https://github.com/internetvin/internetvin-terminal/releases/latest)
+2. Unzip it
+3. Drag the `internetvin-terminal` folder into your vault's `.obsidian/plugins/`
+4. Restart Obsidian, then enable the plugin in Settings > Community Plugins
 
 ## Usage
 
