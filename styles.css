@@ -35,8 +35,8 @@
 }
 
 .xterm .composition-view {
-    background: #0c0c0c;
-    color: #e8e4dc;
+    background: var(--background-primary);
+    color: var(--text-normal);
     display: none;
     position: absolute;
     white-space: nowrap;
@@ -48,7 +48,7 @@
 }
 
 .xterm .xterm-viewport {
-    background-color: #0c0c0c;
+    background-color: var(--background-primary);
     overflow-y: scroll;
     cursor: default;
     position: absolute;
@@ -169,44 +169,32 @@
     position: relative;
 }
 
-/* Scrollbar overrides */
-body *::-webkit-scrollbar,
-.app-container ::-webkit-scrollbar,
-.workspace ::-webkit-scrollbar,
-.markdown-source-view ::-webkit-scrollbar,
-.cm-scroller::-webkit-scrollbar {
+/* Scrollbar overrides — scoped to the terminal plugin */
+.vin-terminal-container ::-webkit-scrollbar,
+.vin-fullscreen-overlay ::-webkit-scrollbar {
   width: 6px !important;
   height: 6px !important;
 }
 
-body *::-webkit-scrollbar-track,
-.app-container ::-webkit-scrollbar-track,
-.workspace ::-webkit-scrollbar-track,
-.markdown-source-view ::-webkit-scrollbar-track,
-.cm-scroller::-webkit-scrollbar-track {
+.vin-terminal-container ::-webkit-scrollbar-track,
+.vin-fullscreen-overlay ::-webkit-scrollbar-track {
   background: transparent !important;
 }
 
-body *::-webkit-scrollbar-thumb,
-.app-container ::-webkit-scrollbar-thumb,
-.workspace ::-webkit-scrollbar-thumb,
-.markdown-source-view ::-webkit-scrollbar-thumb,
-.cm-scroller::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06) !important;
+.vin-terminal-container ::-webkit-scrollbar-thumb,
+.vin-fullscreen-overlay ::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border) !important;
   border-radius: 3px !important;
 }
 
-body *::-webkit-scrollbar-thumb:hover,
-.app-container ::-webkit-scrollbar-thumb:hover,
-.workspace ::-webkit-scrollbar-thumb:hover,
-.markdown-source-view ::-webkit-scrollbar-thumb:hover,
-.cm-scroller::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
+.vin-terminal-container ::-webkit-scrollbar-thumb:hover,
+.vin-fullscreen-overlay ::-webkit-scrollbar-thumb:hover {
+  background: var(--background-modifier-border-hover, var(--background-modifier-border)) !important;
 }
 
 /* ========================================
    vin-terminal plugin styles
-   Sans-serif UI, warm palette, generous spacing
+   Themed via Obsidian CSS variables
    ======================================== */
 
 .vin-terminal-container {
@@ -214,7 +202,7 @@ body *::-webkit-scrollbar-thumb:hover,
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: #0c0c0c;
+  background: var(--background-primary);
 }
 
 /* --- Tab bar --- */
@@ -223,10 +211,10 @@ body *::-webkit-scrollbar-thumb:hover,
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: #0c0c0c;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
   flex-shrink: 0;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
 }
 
 .vin-terminal-tabs-scroll {
@@ -251,28 +239,28 @@ body *::-webkit-scrollbar-thumb:hover,
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 450;
   letter-spacing: 0.01em;
-  color: #706c64;
+  color: var(--text-muted);
   white-space: nowrap;
   user-select: none;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .vin-terminal-tab:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--background-secondary);
 }
 
 .vin-terminal-tab.is-active {
-  color: #c0a86a;
-  border-color: rgba(192, 168, 106, 0.2);
-  background: rgba(192, 168, 106, 0.06);
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  background: rgba(var(--interactive-accent-rgb, 0, 122, 255), 0.08);
 }
 
 
@@ -280,10 +268,10 @@ body *::-webkit-scrollbar-thumb:hover,
 .vin-terminal-container input[type="text"].vin-terminal-tab-rename {
   all: unset;
   font: inherit;
-  color: #b8b4ab;
+  color: var(--text-normal);
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(184, 180, 171, 0.25);
+  border-bottom: 1px solid var(--background-modifier-border);
   border-radius: 0;
   outline: none;
   box-shadow: none;
@@ -291,7 +279,7 @@ body *::-webkit-scrollbar-thumb:hover,
   padding: 0;
   margin: 0;
   letter-spacing: inherit;
-  caret-color: #b8b4ab;
+  caret-color: var(--text-normal);
   font-size: inherit;
   line-height: inherit;
 }
@@ -302,19 +290,19 @@ body *::-webkit-scrollbar-thumb:hover,
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
   font-weight: 300;
-  color: #484440;
+  color: var(--text-faint);
   flex-shrink: 0;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-terminal-tab-new:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 /* --- Session area --- */
@@ -329,7 +317,7 @@ body *::-webkit-scrollbar-thumb:hover,
   inset: 0;
   padding: 10px 6px 14px 12px;
   display: none;
-  background: #0c0c0c;
+  background: var(--background-primary);
 }
 
 .vin-terminal-session.is-active {
@@ -351,27 +339,27 @@ body *::-webkit-scrollbar-thumb:hover,
   min-width: 260px;
   max-width: 420px;
   max-height: 240px;
-  background: #141310;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 10px;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
   font-size: 12.5px;
-  color: #b8b4ab;
+  color: var(--text-normal);
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-s);
 }
 
 .vin-wikilink-header {
   padding: 8px 12px;
   font-size: 11px;
   font-weight: 500;
-  color: #706c64;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .vin-wikilink-empty {
   padding: 12px;
-  color: #484440;
+  color: var(--text-faint);
   font-style: italic;
 }
 
@@ -390,22 +378,22 @@ body *::-webkit-scrollbar-thumb:hover,
 }
 
 .vin-wikilink-item:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--background-modifier-hover);
 }
 
 .vin-wikilink-item.is-selected {
-  background: rgba(192, 168, 106, 0.08);
+  background: rgba(var(--interactive-accent-rgb, 0, 122, 255), 0.1);
 }
 
 .vin-wikilink-name {
-  color: #b8b4ab;
+  color: var(--text-normal);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .vin-wikilink-path {
-  color: #484440;
+  color: var(--text-faint);
   font-size: 10.5px;
   white-space: nowrap;
   overflow: hidden;
@@ -414,7 +402,7 @@ body *::-webkit-scrollbar-thumb:hover,
 }
 
 .vin-wikilink-item.is-unresolved .vin-wikilink-name {
-  color: #706c64;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -426,8 +414,8 @@ body *::-webkit-scrollbar-thumb:hover,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(12, 12, 12, 0.7);
-  border: 2px dashed rgba(192, 168, 106, 0.25);
+  background: var(--background-primary-alt);
+  border: 2px dashed var(--interactive-accent);
   border-radius: 8px;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -439,11 +427,11 @@ body *::-webkit-scrollbar-thumb:hover,
 }
 
 .vin-dropzone-label {
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
   font-size: 13px;
   font-weight: 450;
   letter-spacing: 0.02em;
-  color: rgba(192, 168, 106, 0.6);
+  color: var(--interactive-accent);
 }
 
 .vin-drop-badge {
@@ -470,10 +458,10 @@ body *::-webkit-scrollbar-thumb:hover,
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: #141310;
-  border: 1px solid rgba(192, 168, 106, 0.15);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
 }
 
 .vin-drop-badge-thumb {
@@ -482,12 +470,12 @@ body *::-webkit-scrollbar-thumb:hover,
   border-radius: 4px;
   object-fit: cover;
   flex-shrink: 0;
-  background: #1c1a18;
+  background: var(--background-primary-alt);
 }
 
 .vin-drop-badge-name {
   font-size: 12px;
-  color: #b8b4ab;
+  color: var(--text-normal);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -500,7 +488,7 @@ body *::-webkit-scrollbar-thumb:hover,
   z-index: 999999;
   display: flex;
   flex-direction: row;
-  background: #0c0c0c;
+  background: var(--background-primary);
   opacity: 0;
   transition: opacity 150ms ease;
 }
@@ -522,10 +510,10 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   padding: 44px 10px 12px;
   width: 200px;
   min-width: 200px;
-  background: #0c0c0c;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--background-primary);
+  border-right: 1px solid var(--background-modifier-border);
   flex-shrink: 0;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
 }
 
 .vin-fs-tabs {
@@ -542,28 +530,28 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 450;
   letter-spacing: 0.01em;
-  color: #706c64;
+  color: var(--text-muted);
   white-space: nowrap;
   user-select: none;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .vin-fs-tab:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--background-secondary);
 }
 
 .vin-fs-tab.is-active {
-  color: #c0a86a;
-  border-color: rgba(192, 168, 106, 0.2);
-  background: rgba(192, 168, 106, 0.06);
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  background: rgba(var(--interactive-accent-rgb, 0, 122, 255), 0.08);
 }
 
 .vin-fs-tab-label {
@@ -578,10 +566,10 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
 .vin-fullscreen-pane input[type="text"].vin-fs-tab-rename {
   all: unset !important;
   font: inherit !important;
-  color: #b8b4ab !important;
+  color: var(--text-normal) !important;
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(184, 180, 171, 0.25) !important;
+  border-bottom: 1px solid var(--background-modifier-border) !important;
   border-radius: 0 !important;
   outline: none !important;
   box-shadow: none !important;
@@ -590,7 +578,7 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   padding: 0 !important;
   margin: 0 !important;
   letter-spacing: inherit;
-  caret-color: #b8b4ab;
+  caret-color: var(--text-normal);
   font-size: inherit !important;
   line-height: inherit !important;
 }
@@ -600,19 +588,19 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   align-items: center;
   justify-content: center;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
   font-weight: 300;
-  color: #484440;
+  color: var(--text-faint);
   flex-shrink: 0;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-fs-tab-new:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 /* Fullscreen controls */
@@ -623,7 +611,7 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   gap: 8px;
   flex-shrink: 0;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--background-modifier-border);
 }
 
 .vin-fs-layout-group {
@@ -632,8 +620,8 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   justify-content: center;
   gap: 2px;
   padding: 3px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
 }
 
@@ -645,18 +633,18 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   width: 28px;
   height: 26px;
   border-radius: 5px;
-  color: #484440;
+  color: var(--text-faint);
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 
 .vin-fs-layout-btn:hover {
-  color: #706c64;
+  color: var(--text-muted);
 }
 
 .vin-fs-layout-btn.is-active {
-  color: #c0a86a;
-  background: rgba(192, 168, 106, 0.1);
+  color: var(--interactive-accent);
+  background: rgba(var(--interactive-accent-rgb, 0, 122, 255), 0.12);
 }
 
 .vin-fs-exit-btn {
@@ -665,9 +653,9 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   align-items: center;
   justify-content: center;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  color: #484440;
+  color: var(--text-faint);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -678,26 +666,26 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
 }
 
 .vin-fs-exit-btn:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 /* Activity pulse for tabs with new output */
 @keyframes vin-tab-pulse {
   0%, 100% {
-    border-color: rgba(255, 120, 70, 0.25);
-    background: rgba(255, 120, 70, 0.04);
-    box-shadow: 0 0 0 0 rgba(255, 120, 70, 0);
+    border-color: var(--text-error);
+    background: rgba(var(--text-error-rgb, 255, 120, 70), 0.06);
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    border-color: rgba(255, 120, 70, 0.7);
-    background: rgba(255, 120, 70, 0.12);
-    box-shadow: 0 0 12px 2px rgba(255, 120, 70, 0.2);
+    border-color: var(--text-error);
+    background: rgba(var(--text-error-rgb, 255, 120, 70), 0.14);
+    box-shadow: 0 0 12px 2px rgba(var(--text-error-rgb, 255, 120, 70), 0.2);
   }
 }
 
 .vin-fs-tab.has-activity {
-  color: #ff8855;
+  color: var(--text-error);
   animation: vin-tab-pulse 1.2s ease-in-out infinite;
 }
 
@@ -707,10 +695,10 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ff7846;
+  background: var(--text-error);
   margin-right: 6px;
   flex-shrink: 0;
-  box-shadow: 0 0 6px 1px rgba(255, 120, 70, 0.5);
+  box-shadow: 0 0 6px 1px rgba(var(--text-error-rgb, 255, 120, 70), 0.5);
   animation: vin-dot-pulse 1.2s ease-in-out infinite;
 }
 
@@ -725,7 +713,7 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--background-secondary);
 }
 
 .vin-fullscreen-grid[data-layout="single"] {
@@ -753,30 +741,30 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #0c0c0c;
+  background: var(--background-primary);
   border: 1px solid transparent;
   transition: border-color 0.15s;
 }
 
 .vin-fullscreen-pane.is-focused {
-  border-color: rgba(192, 168, 106, 0.15);
+  border-color: var(--interactive-accent);
 }
 
 .vin-fullscreen-pane-label {
   padding: 4px 10px;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
   font-size: 10.5px;
   font-weight: 450;
   letter-spacing: 0.02em;
-  color: #484440;
-  background: rgba(255, 255, 255, 0.015);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text-faint);
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
   flex-shrink: 0;
   user-select: none;
 }
 
 .vin-fullscreen-pane.is-focused .vin-fullscreen-pane-label {
-  color: #c0a86a;
+  color: var(--interactive-accent);
 }
 
 .vin-fullscreen-pane .vin-terminal-session {
@@ -798,16 +786,16 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
-  color: #484440;
+  color: var(--text-faint);
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-terminal-tab-fullscreen:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 .vin-terminal-tab-fullscreen svg {
@@ -821,44 +809,44 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
   font-weight: 400;
-  color: #484440;
+  color: var(--text-faint);
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-terminal-tab-help:hover {
-  color: #a09888;
-  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 
 /* --- Wiki-link preview panel --- */
 .vin-wikilink-preview {
   position: absolute;
-  background: #141310;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 10px;
   padding: 12px;
   font-size: 12px;
-  color: #a09888;
+  color: var(--text-normal);
   max-height: 240px;
   overflow: hidden;
   z-index: 1001;
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-interface);
+  box-shadow: var(--shadow-s);
 }
 .vin-preview-meta {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
   font-size: 10.5px;
-  color: #706c64;
+  color: var(--text-muted);
 }
-.vin-preview-backlinks { color: #7094b8; }
+.vin-preview-backlinks { color: var(--text-accent); }
 .vin-preview-tags {
   display: flex;
   flex-wrap: wrap;
@@ -866,34 +854,34 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   margin-bottom: 8px;
 }
 .vin-preview-tag {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--background-primary-alt);
   padding: 2px 7px;
   border-radius: 4px;
   font-size: 10.5px;
-  color: #88a876;
+  color: var(--text-accent);
 }
 .vin-preview-content {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
-  color: #706c64;
+  color: var(--text-muted);
   max-height: 150px;
   overflow: hidden;
 }
 .vin-preview-empty {
-  color: #484440;
+  color: var(--text-faint);
   font-style: italic;
 }
 
 /* --- Bookmark strip --- */
 .vin-bookmark-strip { position: absolute; top: 0; right: 0; width: 16px; height: 100%; z-index: 15; pointer-events: none; }
-.vin-bookmark-pip { position: absolute; right: 2px; width: 10px; height: 4px; background: #c0a86a; opacity: 0.4; border-radius: 2px; cursor: pointer; pointer-events: auto; transition: opacity 0.15s, transform 0.15s; }
+.vin-bookmark-pip { position: absolute; right: 2px; width: 10px; height: 4px; background: var(--interactive-accent); opacity: 0.4; border-radius: 2px; cursor: pointer; pointer-events: auto; transition: opacity 0.15s, transform 0.15s; }
 .vin-bookmark-pip:hover { opacity: 0.9; transform: scaleY(1.5); }
-.vin-bookmark-pip.is-active { opacity: 1; background: #d8c88a; }
+.vin-bookmark-pip.is-active { opacity: 1; }
 
 /* In-terminal gutter decoration */
-.vin-bookmark-gutter { width: 3px !important; background: rgba(192, 168, 106, 0.3); border-radius: 1px; pointer-events: auto; cursor: pointer; }
-.vin-bookmark-gutter:hover { background: rgba(192, 168, 106, 0.7); }
+.vin-bookmark-gutter { width: 3px !important; background: var(--interactive-accent); opacity: 0.4; border-radius: 1px; pointer-events: auto; cursor: pointer; }
+.vin-bookmark-gutter:hover { opacity: 0.8; }
 
 /* --- Shortcuts modal --- */
 .vin-shortcuts-modal h3 {
@@ -901,7 +889,7 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-normal);
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
 }
 .vin-shortcuts-modal table { width: 100%; border-collapse: collapse; }
 .vin-shortcuts-modal tr { border-bottom: 1px solid var(--background-modifier-border); }
@@ -909,15 +897,15 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   padding: 8px 0;
   font-size: 13px;
   color: var(--text-muted);
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
 }
 .vin-shortcuts-modal td:first-child { width: 150px; }
 .vin-shortcuts-modal kbd {
   display: inline-block;
   padding: 3px 8px;
-  font-family: 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: var(--font-monospace);
   font-size: 11px;
-  color: #c0a86a;
+  color: var(--interactive-accent);
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
@@ -926,5 +914,5 @@ body:has(.vin-fullscreen-overlay.is-visible) > .menu {
   margin-top: 14px;
   font-size: 11.5px;
   color: var(--text-faint);
-  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-interface);
 }

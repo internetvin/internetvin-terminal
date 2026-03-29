@@ -5,6 +5,70 @@ import type { ChildProcess } from "child_process";
 
 const VIEW_TYPE = "vin-terminal-view";
 
+// --- Theme helpers ---
+// Build an xterm.js ITheme from Obsidian's CSS variables at runtime.
+// ANSI colors use sensible defaults that adapt to light/dark mode.
+
+function getObsidianTheme(): Record<string, string> {
+  const s = getComputedStyle(document.body);
+  const get = (v: string) => s.getPropertyValue(v).trim();
+  const isDark = document.body.classList.contains("theme-dark");
+
+  const bg = get("--background-primary") || (isDark ? "#1e1e1e" : "#ffffff");
+  const fg = get("--text-normal") || (isDark ? "#dcddde" : "#1a1a1a");
+  const accent = get("--interactive-accent") || (isDark ? "#7f6df2" : "#705dcf");
+  const muted = get("--text-muted") || (isDark ? "#999" : "#666");
+
+  // ANSI palette: two variants for dark and light backgrounds
+  const ansi = isDark
+    ? {
+        black:         "#1a1a2e",
+        red:           "#e06c75",
+        green:         "#98c379",
+        yellow:        "#e5c07b",
+        blue:          "#61afef",
+        magenta:       "#c678dd",
+        cyan:          "#56b6c2",
+        white:         "#abb2bf",
+        brightBlack:   "#5c6370",
+        brightRed:     "#e88388",
+        brightGreen:   "#a9d18e",
+        brightYellow:  "#ebd09c",
+        brightBlue:    "#7ec8e3",
+        brightMagenta: "#d19de0",
+        brightCyan:    "#73cdd6",
+        brightWhite:   "#f0f0f0",
+      }
+    : {
+        black:         "#383a42",
+        red:           "#d73a49",
+        green:         "#22863a",
+        yellow:        "#b08800",
+        blue:          "#0366d6",
+        magenta:       "#6f42c1",
+        cyan:          "#0598bc",
+        white:         "#6a737d",
+        brightBlack:   "#959da5",
+        brightRed:     "#cb2431",
+        brightGreen:   "#28a745",
+        brightYellow:  "#dbab09",
+        brightBlue:    "#2188ff",
+        brightMagenta: "#8a63d2",
+        brightCyan:    "#3192aa",
+        brightWhite:   "#24292e",
+      };
+
+  return {
+    background: bg,
+    foreground: fg,
+    cursor: muted,
+    cursorAccent: bg,
+    selectionBackground: isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)",
+    selectionForeground: isDark ? "#f0f0f0" : "#1a1a1a",
+    ...ansi,
+  };
+}
+
 // --- WikiLinkAutocomplete ---
 // Simpler approach: [[ passes through to the shell normally (user sees it typed).
 // Dropdown appears overlaid. On accept we write "NoteName]]" to complete the link.
@@ -594,30 +658,7 @@ class TerminalSession {
       fontFamily: "'SF Mono', 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace",
       fontWeight: "400",
       fontWeightBold: "600",
-      theme: {
-        background: "#0c0c0c",
-        foreground: "#b8b4ab",
-        cursor: "#b8b4ab",
-        cursorAccent: "#0c0c0c",
-        selectionBackground: "rgba(180, 170, 150, 0.15)",
-        selectionForeground: "#e8e4dc",
-        black: "#0c0c0c",
-        red: "#bf7070",
-        green: "#88a876",
-        yellow: "#c0a86a",
-        blue: "#7094b8",
-        magenta: "#a080b0",
-        cyan: "#70a0a0",
-        white: "#b8b4ab",
-        brightBlack: "#484440",
-        brightRed: "#d49090",
-        brightGreen: "#a4c490",
-        brightYellow: "#d8c88a",
-        brightBlue: "#90b4d0",
-        brightMagenta: "#bca0cc",
-        brightCyan: "#90bcbc",
-        brightWhite: "#e8e4dc",
-      },
+      theme: getObsidianTheme(),
       allowProposedApi: true,
     });
 
@@ -943,6 +984,10 @@ class TerminalSession {
 
   hide() {
     this.containerEl.removeClass("is-active");
+  }
+
+  updateTheme() {
+    this.terminal.options.theme = getObsidianTheme();
   }
 
   addBookmark(label?: string) { this.bookmarkManager?.addBookmark(label); }
@@ -1552,6 +1597,13 @@ class TerminalView extends ItemView {
 
     // Fullscreen manager
     this.fullscreenManager = new FullscreenManager(this);
+
+    // Re-apply terminal theme when Obsidian theme changes
+    this.registerEvent(
+      this.app.workspace.on("css-change", () => {
+        for (const s of this.sessions) s.updateTheme();
+      })
+    );
 
     // Create first session (setState will replace this if restoring)
     this.createSession();
