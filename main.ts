@@ -1,4 +1,4 @@
-import { Plugin, ItemView, WorkspaceLeaf, App, TFile, setIcon, SuggestModal } from "obsidian";
+import { Plugin, ItemView, WorkspaceLeaf, App, TFile, setIcon, SuggestModal, Modal, Menu } from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import type { ChildProcess } from "child_process";
@@ -413,6 +413,153 @@ class WikiLinkAutocomplete {
   }
 }
 
+// --- BookmarkManager ---
+
+interface Bookmark {
+  id: number;
+  marker: any; // IMarker
+  decoration: any; // IDecoration | null
+  label: string;
+  timestamp: number;
+  pipEl: HTMLElement | null;
+}
+
+class BookmarkManager {
+  private bookmarks: Bookmark[] = [];
+  private nextId = 1;
+  private terminal: Terminal;
+  private containerEl: HTMLElement;
+  private stripEl: HTMLElement;
+  private updateTimer: ReturnType<typeof setTimeout> | null = null;
+  private disposables: { dispose(): void }[] = [];
+
+  constructor(terminal: Terminal, containerEl: HTMLElement) {
+    this.terminal = terminal;
+    this.containerEl = containerEl;
+
+    // Create the bookmark strip (vertical rail on right edge)
+    this.stripEl = document.createElement("div");
+    this.stripEl.className = "vin-bookmark-strip";
+    this.containerEl.appendChild(this.stripEl);
+
+    // Listen for events that require pip repositioning
+    const debouncedUpdate = () => {
+      if (this.updateTimer) clearTimeout(this.updateTimer);
+      this.updateTimer = setTimeout(() => this.updateStrip(), 50);
+    };
+
+    this.disposables.push(this.terminal.onScroll(debouncedUpdate));
+    this.disposables.push(this.terminal.onLineFeed(debouncedUpdate));
+    this.disposables.push(this.terminal.onResize(debouncedUpdate));
+  }
+
+  addBookmark(label?: string) {
+    const buf = this.terminal.buffer.active;
+    // If scrolled back, bookmark the top of the viewport; otherwise bookmark cursor line
+    const viewportTop = buf.viewportY;
+    const cursorLine = buf.baseY + buf.cursorY;
+    const isScrolledBack = viewportTop < buf.baseY;
+    const line = isScrolledBack ? viewportTop : cursorLine;
+
+    const marker = this.terminal.registerMarker(line - cursorLine);
+    if (!marker) return;
+
+    const id = this.nextId++;
+    const bookmarkLabel = label || `#${id}`;
+
+    // Try to create a gutter decoration
+    let decoration: any = null;
+    try {
+      decoration = this.terminal.registerDecoration({ marker, anchor: "left" });
+      if (decoration) {
+        decoration.onRender((el: HTMLElement) => {
+          el.classList.add("vin-bookmark-gutter");
+          el.title = bookmarkLabel;
+          el.addEventListener("click", () => this.jumpTo(bookmark));
+        });
+      }
+    } catch {
+      // Alt buffer or other issue - decoration stays null
+    }
+
+    // Create pip in the strip
+    const pipEl = document.createElement("div");
+    pipEl.className = "vin-bookmark-pip";
+    pipEl.title = bookmarkLabel;
+    pipEl.addEventListener("click", () => this.jumpTo(bookmark));
+    this.stripEl.appendChild(pipEl);
+
+    const bookmark: Bookmark = { id, marker, decoration, label: bookmarkLabel, timestamp: Date.now(), pipEl };
+    this.bookmarks.push(bookmark);
+
+    // Auto-remove when scrollback is trimmed
+    marker.onDispose(() => this.removeBookmark(bookmark));
+
+    this.updateStrip();
+  }
+
+  jumpTo(bookmark: Bookmark) {
+    const line = bookmark.marker.line;
+    this.terminal.scrollToLine(line);
+
+    // Briefly highlight the pip
+    if (bookmark.pipEl) {
+      bookmark.pipEl.addClass("is-active");
+      setTimeout(() => bookmark.pipEl?.removeClass("is-active"), 600);
+    }
+  }
+
+  jumpNext() {
+    if (this.bookmarks.length === 0) return;
+    const sorted = [...this.bookmarks].sort((a, b) => a.marker.line - b.marker.line);
+    const viewportY = this.terminal.buffer.active.viewportY;
+    const next = sorted.find((b) => b.marker.line > viewportY + 1);
+    this.jumpTo(next ?? sorted[0]); // wrap around
+  }
+
+  jumpPrev() {
+    if (this.bookmarks.length === 0) return;
+    const sorted = [...this.bookmarks].sort((a, b) => a.marker.line - b.marker.line);
+    const viewportY = this.terminal.buffer.active.viewportY;
+    const prev = sorted.slice().reverse().find((b) => b.marker.line < viewportY);
+    this.jumpTo(prev ?? sorted[sorted.length - 1]); // wrap around
+  }
+
+  clearAll() {
+    for (const b of [...this.bookmarks]) {
+      this.removeBookmark(b);
+    }
+  }
+
+  private removeBookmark(bookmark: Bookmark) {
+    const idx = this.bookmarks.indexOf(bookmark);
+    if (idx === -1) return;
+    this.bookmarks.splice(idx, 1);
+    bookmark.pipEl?.remove();
+    try { bookmark.decoration?.dispose(); } catch { /* already disposed */ }
+    try { bookmark.marker?.dispose(); } catch { /* already disposed */ }
+  }
+
+  private updateStrip() {
+    const totalLines = this.terminal.buffer.active.length;
+    if (totalLines === 0) return;
+    for (const b of this.bookmarks) {
+      if (b.pipEl) {
+        const pct = (b.marker.line / totalLines) * 100;
+        b.pipEl.style.top = `${pct}%`;
+      }
+    }
+  }
+
+  destroy() {
+    if (this.updateTimer) clearTimeout(this.updateTimer);
+    for (const d of this.disposables) d.dispose();
+    this.disposables = [];
+    this.clearAll();
+    this.stripEl.remove();
+  }
+}
+
 // --- TerminalSession ---
 
 class TerminalSession {
@@ -425,6 +572,12 @@ class TerminalSession {
   app: App;
   textareaEl: HTMLTextAreaElement | null = null;
   private autocomplete: WikiLinkAutocomplete | null = null;
+  private bookmarkManager: BookmarkManager | null = null;
+  hasActivity = false;
+  private _activityCallback: ((session: TerminalSession) => void) | null = null;
+  setActivityCallback(cb: ((session: TerminalSession) => void) | null) {
+    this._activityCallback = cb;
+  }
 
   constructor(parent: HTMLElement, id: number, cwd: string, app: App) {
     this.id = id;
@@ -435,32 +588,35 @@ class TerminalSession {
 
     this.terminal = new Terminal({
       cursorBlink: true,
-      fontSize: 13,
-      fontFamily: "'GT America Mono', 'SF Mono', 'Fira Code', monospace",
+      fontSize: 13.5,
+      lineHeight: 1.4,
+      letterSpacing: 0.3,
+      fontFamily: "'SF Mono', 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace",
+      fontWeight: "400",
+      fontWeightBold: "600",
       theme: {
-        background: "#000000",
-        foreground: "#D3D3D3",
-        cursor: "#D3D3D3",
-        cursorAccent: "#000000",
-        selectionBackground: "rgba(211, 211, 211, 0.15)",
-        selectionForeground: "#FFFFFF",
-        // Muted ANSI palette to match Editorial's restrained aesthetic
-        black: "#000000",
-        red: "#A06060",
-        green: "#7A9A6A",
-        yellow: "#B0A070",
-        blue: "#6080A0",
-        magenta: "#8A7090",
-        cyan: "#608888",
-        white: "#D3D3D3",
-        brightBlack: "#393939",
-        brightRed: "#C08080",
-        brightGreen: "#9ABA8A",
-        brightYellow: "#D0C090",
-        brightBlue: "#80A0C0",
-        brightMagenta: "#AA90B0",
-        brightCyan: "#80A8A8",
-        brightWhite: "#FFFFFF",
+        background: "#0c0c0c",
+        foreground: "#b8b4ab",
+        cursor: "#b8b4ab",
+        cursorAccent: "#0c0c0c",
+        selectionBackground: "rgba(180, 170, 150, 0.15)",
+        selectionForeground: "#e8e4dc",
+        black: "#0c0c0c",
+        red: "#bf7070",
+        green: "#88a876",
+        yellow: "#c0a86a",
+        blue: "#7094b8",
+        magenta: "#a080b0",
+        cyan: "#70a0a0",
+        white: "#b8b4ab",
+        brightBlack: "#484440",
+        brightRed: "#d49090",
+        brightGreen: "#a4c490",
+        brightYellow: "#d8c88a",
+        brightBlue: "#90b4d0",
+        brightMagenta: "#bca0cc",
+        brightCyan: "#90bcbc",
+        brightWhite: "#e8e4dc",
       },
       allowProposedApi: true,
     });
@@ -497,6 +653,9 @@ class TerminalSession {
       app, this.terminal, (data: string) => this.process.stdin?.write(data), this.containerEl
     );
 
+    // Bookmark manager
+    this.bookmarkManager = new BookmarkManager(this.terminal, this.containerEl);
+
     // Wire I/O
     this.terminal.onData((data) => {
       this.autocomplete?.handleData(data);
@@ -505,6 +664,7 @@ class TerminalSession {
 
     this.process.stdout?.on("data", (data: Buffer) => {
       this.terminal.write(data);
+      if (this._activityCallback) this._activityCallback(this);
     });
 
     this.process.stderr?.on("data", (data: Buffer) => {
@@ -785,7 +945,13 @@ class TerminalSession {
     this.containerEl.removeClass("is-active");
   }
 
+  addBookmark(label?: string) { this.bookmarkManager?.addBookmark(label); }
+  nextBookmark() { this.bookmarkManager?.jumpNext(); }
+  prevBookmark() { this.bookmarkManager?.jumpPrev(); }
+  clearBookmarks() { this.bookmarkManager?.clearAll(); }
+
   destroy() {
+    this.bookmarkManager?.destroy();
     this.autocomplete?.destroy();
     try {
       this.process.kill("SIGTERM");
@@ -884,6 +1050,9 @@ class FullscreenManager {
     // Save positions and move sessions into panes
     this.saveAndMoveAll();
 
+    // Set up activity detection on all sessions
+    this.setupActivityCallbacks();
+
     // Append to body
     document.body.appendChild(this.overlay);
 
@@ -917,6 +1086,9 @@ class FullscreenManager {
     this.tabBarEl = null;
     this.gridEl = null;
     FullscreenManager.overlayOpen = false;
+
+    // Clear activity callbacks
+    this.clearActivityCallbacks();
 
     // Restore sessions to their original containers
     try {
@@ -985,43 +1157,43 @@ class FullscreenManager {
       const tab = document.createElement("div");
       tab.className = "vin-fs-tab";
       if (session === this.focusedSession) tab.classList.add("is-active");
+      if (session.hasActivity && session !== this.focusedSession) tab.classList.add("has-activity");
 
       const label = document.createElement("span");
       label.className = "vin-fs-tab-label";
       label.textContent = session.name;
       tab.appendChild(label);
 
-      const renameBtn = document.createElement("span");
-      renameBtn.className = "vin-fs-tab-btn";
-      setIcon(renameBtn, "pencil");
-      renameBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.startTabRename(tab, label, session);
-      });
-      tab.appendChild(renameBtn);
-
-      if (this.view.sessions.length > 1) {
-        const closeBtn = document.createElement("span");
-        closeBtn.className = "vin-fs-tab-btn vin-fs-tab-close";
-        setIcon(closeBtn, "x");
-        closeBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.view.closeSession(session);
-          this.savedPositions.delete(session);
-          if (this.focusedSession === session) {
-            this.focusedSession = this.view.sessions[this.view.sessions.length - 1] || null;
-          }
-          this.renderFsTabs();
-          this.rebuildPanes();
-        });
-        tab.appendChild(closeBtn);
-      }
-
       tab.addEventListener("click", () => {
         if (this.isRenaming) return;
+        session.hasActivity = false;
         this.focusedSession = session;
         this.renderFsTabs();
         this.rebuildPanes();
+      });
+
+      tab.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        const menu = new Menu();
+        menu.addItem((item) =>
+          item.setTitle("Rename").setIcon("pencil").onClick(() => {
+            this.startTabRename(tab, label, session);
+          })
+        );
+        if (this.view.sessions.length > 1) {
+          menu.addItem((item) =>
+            item.setTitle("Close").setIcon("x").onClick(() => {
+              this.view.closeSession(session);
+              this.savedPositions.delete(session);
+              if (this.focusedSession === session) {
+                this.focusedSession = this.view.sessions[this.view.sessions.length - 1] || null;
+              }
+              this.renderFsTabs();
+              this.rebuildPanes();
+            })
+          );
+        }
+        menu.showAtMouseEvent(e);
       });
 
       tabsArea.appendChild(tab);
@@ -1040,6 +1212,7 @@ class FullscreenManager {
         nextSibling: newest.containerEl.nextSibling,
       });
       this.focusedSession = newest;
+      this.setupActivityCallbacks();
       this.renderFsTabs();
       this.rebuildPanes();
     });
@@ -1169,6 +1342,7 @@ class FullscreenManager {
       // Click pane to focus it
       pane.addEventListener("mousedown", () => {
         if (this.focusedSession !== session) {
+          session.hasActivity = false;
           this.focusedSession = session;
           this.gridEl?.querySelectorAll(".vin-fullscreen-pane").forEach((p) => {
             p.classList.toggle("is-focused", p === pane);
@@ -1216,6 +1390,29 @@ class FullscreenManager {
     // Don't steal focus from rename input
     if (!this.isRenaming && this.focusedSession && sessions.includes(this.focusedSession)) {
       this.focusedSession.focus();
+    }
+  }
+
+  private setupActivityCallbacks() {
+    for (const session of this.view.sessions) {
+      session.setActivityCallback((s) => {
+        if (s !== this.focusedSession && !s.hasActivity) {
+          s.hasActivity = true;
+          const tabs = this.tabBarEl?.querySelectorAll('.vin-fs-tab');
+          if (tabs) {
+            const idx = this.view.sessions.indexOf(s);
+            if (idx >= 0 && tabs[idx]) {
+              tabs[idx].classList.add('has-activity');
+            }
+          }
+        }
+      });
+    }
+  }
+
+  private clearActivityCallbacks() {
+    for (const session of this.view.sessions) {
+      session.setActivityCallback(null);
     }
   }
 
@@ -1406,36 +1603,48 @@ class TerminalView extends ItemView {
 
     this.tabBarEl.empty();
 
+    // Scrollable tabs area (left side)
+    const tabsArea = this.tabBarEl.createDiv({ cls: "vin-terminal-tabs-scroll" });
+
     this.sessions.forEach((session) => {
-      const tab = this.tabBarEl.createDiv({ cls: "vin-terminal-tab" });
+      const tab = tabsArea.createDiv({ cls: "vin-terminal-tab" });
       if (session === this.activeSession) tab.addClass("is-active");
 
       const label = tab.createSpan({ cls: "tab-label", text: session.name });
 
-      const renameBtn = tab.createSpan({ cls: "rename-btn" });
-      setIcon(renameBtn, "pencil");
-      renameBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.startRename(tab, label, session);
-      });
-
-      const closeBtn = tab.createSpan({ cls: "close-btn" });
-      setIcon(closeBtn, "x");
-      closeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.closeSession(session);
-      });
-
       tab.addEventListener("click", () => this.switchTo(session));
+
+      tab.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        const menu = new Menu();
+        menu.addItem((item) =>
+          item.setTitle("Rename").setIcon("pencil").onClick(() => {
+            this.startRename(tab, label, session);
+          })
+        );
+        menu.addItem((item) =>
+          item.setTitle("Close").setIcon("x").onClick(() => {
+            this.closeSession(session);
+          })
+        );
+        menu.showAtMouseEvent(e);
+      });
     });
 
-    const newBtn = this.tabBarEl.createDiv({ cls: "vin-terminal-tab-new", text: "+" });
+    const newBtn = tabsArea.createDiv({ cls: "vin-terminal-tab-new", text: "+" });
     newBtn.addEventListener("click", () => this.createSession());
 
-    const fsBtn = this.tabBarEl.createDiv({ cls: "vin-terminal-tab-fullscreen" });
+    // Pinned controls (right side, never scroll)
+    const controls = this.tabBarEl.createDiv({ cls: "vin-terminal-tab-controls" });
+
+    const fsBtn = controls.createDiv({ cls: "vin-terminal-tab-fullscreen" });
     setIcon(fsBtn, "expand");
     fsBtn.title = "Fullscreen";
     fsBtn.addEventListener("click", () => this.fullscreenManager?.toggle());
+
+    const helpBtn = controls.createDiv({ cls: "vin-terminal-tab-help", text: "?" });
+    helpBtn.title = "Shortcuts";
+    helpBtn.addEventListener("click", () => new ShortcutsModal(this.app).open());
   }
 
   private startRename(tab: HTMLElement, label: HTMLSpanElement, session: TerminalSession) {
@@ -1496,6 +1705,42 @@ class TerminalView extends ItemView {
   }
 }
 
+// --- ShortcutsModal ---
+
+class ShortcutsModal extends Modal {
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("vin-shortcuts-modal");
+    contentEl.createEl("h3", { text: "Terminal Shortcuts" });
+
+    const shortcuts: [string, string][] = [
+      ["Cmd+Shift+S", "Capture output to note"],
+      ["Cmd+Shift+M", "Add bookmark"],
+      ["Cmd+Shift+]", "Next bookmark"],
+      ["Cmd+Shift+[", "Previous bookmark"],
+      ["Escape", "Exit fullscreen"],
+      ["[[ ...", "Wiki-link autocomplete"],
+    ];
+
+    const table = contentEl.createEl("table");
+    for (const [key, desc] of shortcuts) {
+      const row = table.createEl("tr");
+      const keyCell = row.createEl("td");
+      keyCell.createEl("kbd", { text: key });
+      row.createEl("td", { text: desc });
+    }
+
+    contentEl.createEl("p", {
+      text: "Open, fullscreen, and tab commands have no default hotkeys. Assign them in Settings > Hotkeys.",
+      cls: "vin-shortcuts-hint",
+    });
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
 // --- OutputCaptureModal ---
 
 interface CaptureOption {
@@ -1528,7 +1773,7 @@ class OutputCaptureModal extends SuggestModal<CaptureOption> {
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
-    const block = `\n## Terminal Capture — ${hh}:${mm}\n\n\`\`\`\n${this.capturedText}\n\`\`\`\n`;
+    const block = `\n**Terminal Capture — ${hh}:${mm}**\n\n${this.capturedText}\n`;
 
     if (option.action === "daily") {
       const yyyy = now.getFullYear();
@@ -1611,6 +1856,59 @@ export default class TerminalPlugin extends Plugin {
         if (!text.trim()) return;
         new OutputCaptureModal(this.app, text).open();
       },
+    });
+
+    this.addCommand({
+      id: "add-bookmark",
+      name: "Add Terminal Bookmark",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "m" }],
+      callback: () => {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+        if (leaves.length === 0) return;
+        const view = leaves[0].view as TerminalView;
+        view.activeSession?.addBookmark();
+      },
+    });
+
+    this.addCommand({
+      id: "next-bookmark",
+      name: "Next Terminal Bookmark",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "]" }],
+      callback: () => {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+        if (leaves.length === 0) return;
+        const view = leaves[0].view as TerminalView;
+        view.activeSession?.nextBookmark();
+      },
+    });
+
+    this.addCommand({
+      id: "prev-bookmark",
+      name: "Previous Terminal Bookmark",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "[" }],
+      callback: () => {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+        if (leaves.length === 0) return;
+        const view = leaves[0].view as TerminalView;
+        view.activeSession?.prevBookmark();
+      },
+    });
+
+    this.addCommand({
+      id: "clear-bookmarks",
+      name: "Clear Terminal Bookmarks",
+      callback: () => {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+        if (leaves.length === 0) return;
+        const view = leaves[0].view as TerminalView;
+        view.activeSession?.clearBookmarks();
+      },
+    });
+
+    this.addCommand({
+      id: "show-shortcuts",
+      name: "Show Terminal Shortcuts",
+      callback: () => new ShortcutsModal(this.app).open(),
     });
 
     // Ensure a terminal leaf exists in the right sidebar on startup

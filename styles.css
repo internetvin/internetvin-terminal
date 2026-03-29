@@ -35,8 +35,8 @@
 }
 
 .xterm .composition-view {
-    background: #000;
-    color: #FFF;
+    background: #0c0c0c;
+    color: #e8e4dc;
     display: none;
     position: absolute;
     white-space: nowrap;
@@ -48,7 +48,7 @@
 }
 
 .xterm .xterm-viewport {
-    background-color: #000;
+    background-color: #0c0c0c;
     overflow-y: scroll;
     cursor: default;
     position: absolute;
@@ -169,7 +169,7 @@
     position: relative;
 }
 
-/* Scrollbar overrides for Editorial aesthetic */
+/* Scrollbar overrides */
 body *::-webkit-scrollbar,
 .app-container ::-webkit-scrollbar,
 .workspace ::-webkit-scrollbar,
@@ -192,7 +192,7 @@ body *::-webkit-scrollbar-thumb,
 .workspace ::-webkit-scrollbar-thumb,
 .markdown-source-view ::-webkit-scrollbar-thumb,
 .cm-scroller::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
   border-radius: 3px !important;
 }
 
@@ -201,100 +201,89 @@ body *::-webkit-scrollbar-thumb:hover,
 .workspace ::-webkit-scrollbar-thumb:hover,
 .markdown-source-view ::-webkit-scrollbar-thumb:hover,
 .cm-scroller::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* vin-terminal plugin styles */
+/* ========================================
+   vin-terminal plugin styles
+   Sans-serif UI, warm palette, generous spacing
+   ======================================== */
+
 .vin-terminal-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--background-primary);
+  background: #0c0c0c;
 }
 
+/* --- Tab bar --- */
 .vin-terminal-tab-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--background-primary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 8px;
+  padding: 8px 14px;
+  background: #0c0c0c;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+}
+
+.vin-terminal-tabs-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
   overflow-x: auto;
-  font-family: 'GT America Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+.vin-terminal-tab-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .vin-terminal-tab {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: #666;
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: 0.01em;
+  color: #706c64;
   white-space: nowrap;
   user-select: none;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .vin-terminal-tab:hover {
-  color: #999;
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
 }
 
 .vin-terminal-tab.is-active {
-  color: #C4B888;
-  border-color: rgba(176, 160, 112, 0.25);
-  background: rgba(176, 160, 112, 0.1);
+  color: #c0a86a;
+  border-color: rgba(192, 168, 106, 0.2);
+  background: rgba(192, 168, 106, 0.06);
 }
 
-.vin-terminal-tab .rename-btn,
-.vin-terminal-tab .close-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
-}
-
-.vin-terminal-tab .rename-btn svg {
-  width: 11px;
-  height: 11px;
-}
-
-.vin-terminal-tab .close-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.vin-terminal-tab:hover .rename-btn,
-.vin-terminal-tab:hover .close-btn {
-  opacity: 0.4;
-}
-
-.vin-terminal-tab .rename-btn:hover,
-.vin-terminal-tab .close-btn:hover {
-  opacity: 0.9;
-  background: rgba(255, 255, 255, 0.06);
-}
 
 .vin-terminal-tab-rename,
 .vin-terminal-container input[type="text"].vin-terminal-tab-rename {
   all: unset;
   font: inherit;
-  color: #D3D3D3;
+  color: #b8b4ab;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(211, 211, 211, 0.3);
+  border-bottom: 1px solid rgba(184, 180, 171, 0.25);
   border-radius: 0;
   outline: none;
   box-shadow: none;
@@ -302,7 +291,7 @@ body *::-webkit-scrollbar-thumb:hover,
   padding: 0;
   margin: 0;
   letter-spacing: inherit;
-  caret-color: #D3D3D3;
+  caret-color: #b8b4ab;
   font-size: inherit;
   line-height: inherit;
 }
@@ -311,21 +300,24 @@ body *::-webkit-scrollbar-thumb:hover,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  color: #444;
+  font-size: 16px;
+  font-weight: 300;
+  color: #484440;
+  flex-shrink: 0;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-terminal-tab-new:hover {
-  color: #999;
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* --- Session area --- */
 .vin-terminal-sessions {
   flex: 1;
   position: relative;
@@ -335,9 +327,9 @@ body *::-webkit-scrollbar-thumb:hover,
 .vin-terminal-session {
   position: absolute;
   inset: 0;
-  padding: 8px 4px 4px 8px;
+  padding: 10px 6px 14px 12px;
   display: none;
-  background: var(--background-primary);
+  background: #0c0c0c;
 }
 
 .vin-terminal-session.is-active {
@@ -352,67 +344,69 @@ body *::-webkit-scrollbar-thumb:hover,
   overflow-y: auto !important;
 }
 
-/* Wiki-link autocomplete dropdown */
+/* --- Wiki-link autocomplete --- */
 .vin-wikilink-dropdown {
   position: absolute;
   z-index: 100;
-  min-width: 240px;
-  max-width: 400px;
-  max-height: 220px;
-  background: #111;
-  border: 1px solid #333;
-  border-radius: 4px;
-  font-family: 'GT America Mono', 'SF Mono', 'Fira Code', monospace;
-  font-size: 12px;
-  color: #D3D3D3;
+  min-width: 260px;
+  max-width: 420px;
+  max-height: 240px;
+  background: #141310;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-size: 12.5px;
+  color: #b8b4ab;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .vin-wikilink-header {
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-size: 11px;
-  color: #888;
-  border-bottom: 1px solid #222;
+  font-weight: 500;
+  color: #706c64;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .vin-wikilink-empty {
-  padding: 10px;
-  color: #555;
+  padding: 12px;
+  color: #484440;
   font-style: italic;
 }
 
 .vin-wikilink-list {
   overflow-y: auto;
-  max-height: 190px;
+  max-height: 200px;
 }
 
 .vin-wikilink-item {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 5px 10px;
+  gap: 10px;
+  padding: 7px 12px;
   cursor: pointer;
+  transition: background 0.1s;
 }
 
 .vin-wikilink-item:hover {
-  background: #1a1a1a;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .vin-wikilink-item.is-selected {
-  background: #222;
+  background: rgba(192, 168, 106, 0.08);
 }
 
 .vin-wikilink-name {
-  color: #D3D3D3;
+  color: #b8b4ab;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .vin-wikilink-path {
-  color: #555;
-  font-size: 10px;
+  color: #484440;
+  font-size: 10.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -420,11 +414,11 @@ body *::-webkit-scrollbar-thumb:hover,
 }
 
 .vin-wikilink-item.is-unresolved .vin-wikilink-name {
-  color: #888;
+  color: #706c64;
   font-style: italic;
 }
 
-/* Drag-and-drop: drop zone overlay */
+/* --- Drag-and-drop --- */
 .vin-terminal-dropzone {
   position: absolute;
   inset: 0;
@@ -432,9 +426,9 @@ body *::-webkit-scrollbar-thumb:hover,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  border: 2px dashed rgba(176, 160, 112, 0.3);
-  border-radius: 4px;
+  background: rgba(12, 12, 12, 0.7);
+  border: 2px dashed rgba(192, 168, 106, 0.25);
+  border-radius: 8px;
   opacity: 0;
   transition: opacity 0.15s ease;
   pointer-events: none;
@@ -445,17 +439,17 @@ body *::-webkit-scrollbar-thumb:hover,
 }
 
 .vin-dropzone-label {
-  font-family: 'GT America Mono', 'SF Mono', 'Fira Code', monospace;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  color: rgba(176, 160, 112, 0.7);
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 450;
+  letter-spacing: 0.02em;
+  color: rgba(192, 168, 106, 0.6);
 }
 
-/* Drag-and-drop: confirmation badge */
 .vin-drop-badge {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
+  bottom: 14px;
+  right: 14px;
   z-index: 60;
   display: flex;
   flex-direction: column;
@@ -474,26 +468,26 @@ body *::-webkit-scrollbar-thumb:hover,
 .vin-drop-badge-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: #161616;
-  border: 1px solid rgba(176, 160, 112, 0.2);
-  border-radius: 5px;
-  font-family: 'GT America Mono', 'SF Mono', 'Fira Code', monospace;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #141310;
+  border: 1px solid rgba(192, 168, 106, 0.15);
+  border-radius: 8px;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
 }
 
 .vin-drop-badge-thumb {
   width: 28px;
   height: 28px;
-  border-radius: 3px;
+  border-radius: 4px;
   object-fit: cover;
   flex-shrink: 0;
-  background: #222;
+  background: #1c1a18;
 }
 
 .vin-drop-badge-name {
-  font-size: 11px;
-  color: #D3D3D3;
+  font-size: 12px;
+  color: #b8b4ab;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -505,8 +499,8 @@ body *::-webkit-scrollbar-thumb:hover,
   inset: 0;
   z-index: 999999;
   display: flex;
-  flex-direction: column;
-  background: #000;
+  flex-direction: row;
+  background: #0c0c0c;
   opacity: 0;
   transition: opacity 150ms ease;
 }
@@ -515,55 +509,61 @@ body *::-webkit-scrollbar-thumb:hover,
   opacity: 1;
 }
 
-/* Fullscreen tab bar (iTerm-style) */
-.vin-fs-tab-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px 6px 80px;
-  background: #000;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
-  font-family: 'GT America Mono', 'SF Mono', 'Fira Code', monospace;
+/* Ensure Obsidian menus render above the fullscreen overlay */
+body:has(.vin-fullscreen-overlay.is-visible) > .menu {
+  z-index: 9999999;
 }
 
-/* Left side: session tabs */
+/* Fullscreen tab bar */
+.vin-fs-tab-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 44px 10px 12px;
+  width: 200px;
+  min-width: 200px;
+  background: #0c0c0c;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+}
+
 .vin-fs-tabs {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
   flex: 1;
-  min-width: 0;
+  min-height: 0;
 }
 
 .vin-fs-tab {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: #666;
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: 0.01em;
+  color: #706c64;
   white-space: nowrap;
   user-select: none;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .vin-fs-tab:hover {
-  color: #999;
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
 }
 
 .vin-fs-tab.is-active {
-  color: #C4B888;
-  border-color: rgba(176, 160, 112, 0.25);
-  background: rgba(176, 160, 112, 0.1);
+  color: #c0a86a;
+  border-color: rgba(192, 168, 106, 0.2);
+  background: rgba(192, 168, 106, 0.06);
 }
 
 .vin-fs-tab-label {
@@ -572,93 +572,69 @@ body *::-webkit-scrollbar-thumb:hover,
   white-space: nowrap;
 }
 
-.vin-fs-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
-}
-
-.vin-fs-tab-btn svg {
-  width: 11px;
-  height: 11px;
-}
-
-.vin-fs-tab-close svg {
-  width: 14px;
-  height: 14px;
-}
-
-.vin-fs-tab:hover .vin-fs-tab-btn {
-  opacity: 0.4;
-}
-
-.vin-fs-tab-btn:hover {
-  opacity: 0.9 !important;
-  background: rgba(255, 255, 255, 0.06);
-}
 
 .vin-fs-tab-rename,
+.vin-fullscreen-overlay input[type="text"].vin-fs-tab-rename,
 .vin-fullscreen-pane input[type="text"].vin-fs-tab-rename {
-  all: unset;
-  font: inherit;
-  color: #D3D3D3;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(211, 211, 211, 0.3);
-  border-radius: 0;
-  outline: none;
-  box-shadow: none;
+  all: unset !important;
+  font: inherit !important;
+  color: #b8b4ab !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(184, 180, 171, 0.25) !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
   min-width: 3ch;
-  padding: 0;
-  margin: 0;
+  max-width: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
   letter-spacing: inherit;
-  caret-color: #D3D3D3;
-  font-size: inherit;
-  line-height: inherit;
+  caret-color: #b8b4ab;
+  font-size: inherit !important;
+  line-height: inherit !important;
 }
 
 .vin-fs-tab-new {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  color: #444;
+  font-size: 16px;
+  font-weight: 300;
+  color: #484440;
   flex-shrink: 0;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-fs-tab-new:hover {
-  color: #999;
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Right side: layout switcher + exit */
+/* Fullscreen controls */
 .vin-fs-controls {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   flex-shrink: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .vin-fs-layout-group {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 2px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
 }
 
 .vin-fs-layout-btn {
@@ -666,21 +642,21 @@ body *::-webkit-scrollbar-thumb:hover,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 24px;
-  border-radius: 4px;
-  color: #555;
+  width: 28px;
+  height: 26px;
+  border-radius: 5px;
+  color: #484440;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 
 .vin-fs-layout-btn:hover {
-  color: #888;
+  color: #706c64;
 }
 
 .vin-fs-layout-btn.is-active {
-  color: #C4B888;
-  background: rgba(176, 160, 112, 0.12);
+  color: #c0a86a;
+  background: rgba(192, 168, 106, 0.1);
 }
 
 .vin-fs-exit-btn {
@@ -688,11 +664,10 @@ body *::-webkit-scrollbar-thumb:hover,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
-  color: #555;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: #484440;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -703,17 +678,54 @@ body *::-webkit-scrollbar-thumb:hover,
 }
 
 .vin-fs-exit-btn:hover {
-  color: #999;
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Grid container */
+/* Activity pulse for tabs with new output */
+@keyframes vin-tab-pulse {
+  0%, 100% {
+    border-color: rgba(255, 120, 70, 0.25);
+    background: rgba(255, 120, 70, 0.04);
+    box-shadow: 0 0 0 0 rgba(255, 120, 70, 0);
+  }
+  50% {
+    border-color: rgba(255, 120, 70, 0.7);
+    background: rgba(255, 120, 70, 0.12);
+    box-shadow: 0 0 12px 2px rgba(255, 120, 70, 0.2);
+  }
+}
+
+.vin-fs-tab.has-activity {
+  color: #ff8855;
+  animation: vin-tab-pulse 1.2s ease-in-out infinite;
+}
+
+.vin-fs-tab.has-activity .vin-fs-tab-label::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff7846;
+  margin-right: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px 1px rgba(255, 120, 70, 0.5);
+  animation: vin-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes vin-dot-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Fullscreen grid */
 .vin-fullscreen-grid {
   flex: 1;
   display: grid;
   gap: 1px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .vin-fullscreen-grid[data-layout="single"] {
@@ -736,37 +748,37 @@ body *::-webkit-scrollbar-thumb:hover,
   grid-template-rows: repeat(auto-fit, minmax(200px, 1fr));
 }
 
-/* Pane (no header, just terminal) */
+/* Fullscreen panes */
 .vin-fullscreen-pane {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #000;
+  background: #0c0c0c;
   border: 1px solid transparent;
   transition: border-color 0.15s;
 }
 
 .vin-fullscreen-pane.is-focused {
-  border-color: rgba(176, 160, 112, 0.2);
+  border-color: rgba(192, 168, 106, 0.15);
 }
 
 .vin-fullscreen-pane-label {
-  padding: 3px 8px;
-  font-family: 'GT America Mono', 'SF Mono', 'Fira Code', monospace;
-  font-size: 10px;
-  letter-spacing: 0.03em;
-  color: #444;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 4px 10px;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-size: 10.5px;
+  font-weight: 450;
+  letter-spacing: 0.02em;
+  color: #484440;
+  background: rgba(255, 255, 255, 0.015);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   flex-shrink: 0;
   user-select: none;
 }
 
 .vin-fullscreen-pane.is-focused .vin-fullscreen-pane-label {
-  color: #C4B888;
+  color: #c0a86a;
 }
 
-/* Terminal session overrides inside fullscreen panes */
 .vin-fullscreen-pane .vin-terminal-session {
   position: relative;
   inset: auto;
@@ -779,74 +791,140 @@ body *::-webkit-scrollbar-thumb:hover,
   height: 100%;
 }
 
-/* Fullscreen button in sidebar tab bar */
+/* --- Sidebar fullscreen + help buttons --- */
 .vin-terminal-tab-fullscreen {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
-  color: #444;
+  color: #484440;
   transition: color 0.15s, border-color 0.15s;
 }
 
 .vin-terminal-tab-fullscreen:hover {
-  color: #999;
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .vin-terminal-tab-fullscreen svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
-/* Wiki-link autocomplete preview panel */
+.vin-terminal-tab-help {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  font-weight: 400;
+  color: #484440;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.vin-terminal-tab-help:hover {
+  color: #a09888;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* --- Wiki-link preview panel --- */
 .vin-wikilink-preview {
   position: absolute;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 11px;
-  color: #aaa;
-  max-height: 220px;
+  background: #141310;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 12px;
+  color: #a09888;
+  max-height: 240px;
   overflow: hidden;
   z-index: 1001;
-  font-family: -apple-system, system-ui, sans-serif;
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .vin-preview-meta {
   display: flex;
   gap: 8px;
-  margin-bottom: 6px;
-  font-size: 10px;
-  color: #666;
+  margin-bottom: 8px;
+  font-size: 10.5px;
+  color: #706c64;
 }
-.vin-preview-backlinks { color: #6080A0; }
+.vin-preview-backlinks { color: #7094b8; }
 .vin-preview-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .vin-preview-tag {
-  background: #222;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 10px;
-  color: #7A9A6A;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  color: #88a876;
 }
 .vin-preview-content {
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.4;
-  color: #888;
-  max-height: 140px;
+  line-height: 1.55;
+  color: #706c64;
+  max-height: 150px;
   overflow: hidden;
 }
 .vin-preview-empty {
-  color: #555;
+  color: #484440;
   font-style: italic;
+}
+
+/* --- Bookmark strip --- */
+.vin-bookmark-strip { position: absolute; top: 0; right: 0; width: 16px; height: 100%; z-index: 15; pointer-events: none; }
+.vin-bookmark-pip { position: absolute; right: 2px; width: 10px; height: 4px; background: #c0a86a; opacity: 0.4; border-radius: 2px; cursor: pointer; pointer-events: auto; transition: opacity 0.15s, transform 0.15s; }
+.vin-bookmark-pip:hover { opacity: 0.9; transform: scaleY(1.5); }
+.vin-bookmark-pip.is-active { opacity: 1; background: #d8c88a; }
+
+/* In-terminal gutter decoration */
+.vin-bookmark-gutter { width: 3px !important; background: rgba(192, 168, 106, 0.3); border-radius: 1px; pointer-events: auto; cursor: pointer; }
+.vin-bookmark-gutter:hover { background: rgba(192, 168, 106, 0.7); }
+
+/* --- Shortcuts modal --- */
+.vin-shortcuts-modal h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-normal);
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+}
+.vin-shortcuts-modal table { width: 100%; border-collapse: collapse; }
+.vin-shortcuts-modal tr { border-bottom: 1px solid var(--background-modifier-border); }
+.vin-shortcuts-modal td {
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
+}
+.vin-shortcuts-modal td:first-child { width: 150px; }
+.vin-shortcuts-modal kbd {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #c0a86a;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}
+.vin-shortcuts-hint {
+  margin-top: 14px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-family: -apple-system, 'Inter', 'SF Pro Display', system-ui, sans-serif;
 }
