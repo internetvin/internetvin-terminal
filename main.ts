@@ -1,4 +1,4 @@
-import { Plugin, ItemView, WorkspaceLeaf, App, TFile, setIcon, SuggestModal, Modal, Menu } from "obsidian";
+import { Plugin, ItemView, WorkspaceLeaf, App, TFile, TFolder, setIcon, SuggestModal, Modal, Menu } from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import type { ChildProcess } from "child_process";
@@ -1610,6 +1610,15 @@ class TerminalView extends ItemView {
   }
 
   async setState(state: any, result: any) {
+    if (state?.initialCwd && this.sessions.length > 0) {
+      // Replace the default session with one at the requested cwd
+      for (const s of this.sessions) s.destroy();
+      this.sessions = [];
+      this.activeSession = null;
+      this.createSession(undefined, state.initialCwd);
+      return super.setState(state, result);
+    }
+
     if (state?.sessions?.length > 0) {
       // Destroy default session created by onOpen
       for (const s of this.sessions) s.destroy();
@@ -1690,10 +1699,11 @@ class TerminalView extends ItemView {
     this.createSession();
   }
 
-  createSession(name?: string) {
+  createSession(name?: string, cwd?: string) {
     const id = this.nextId++;
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const session = new TerminalSession(this.sessionsEl, id, vaultPath, this.app);
+    const sessionCwd = cwd ? require("path").join(vaultPath, cwd) : vaultPath;
+    const session = new TerminalSession(this.sessionsEl, id, sessionCwd, this.app);
     if (name) session.name = name;
     this.sessions.push(session);
     this.switchTo(session);
@@ -2054,23 +2064,93 @@ export default class TerminalPlugin extends Plugin {
       callback: () => new ShortcutsModal(this.app).open(),
     });
 
+    // "Open terminal here" in file/folder context menus (native Obsidian)
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu: Menu, file) => {
+        const folder = file instanceof TFolder ? file : file.parent;
+        if (!folder) return;
+        menu.addItem((item) => {
+          item
+            .setTitle("Open terminal here")
+            .setIcon("terminal")
+            .onClick(() => this.toggleTerminalSide(folder.path));
+        });
+      })
+    );
+
+    // "Open terminal here" in Notebook Navigator menus
+    this.app.workspace.onLayoutReady(() => {
+      this.registerNotebookNavigatorMenus();
+    });
+
     // Ensure a terminal leaf exists in the right sidebar on startup
     this.app.workspace.onLayoutReady(() => this.ensureLeaf());
   }
 
-  private async ensureLeaf() {
+  private async ensureLeaf(folderPath?: string) {
     if (this.app.workspace.getLeavesOfType(VIEW_TYPE).length > 0) return;
     const leaf = this.app.workspace.getRightLeaf(false);
     if (leaf) {
-      await leaf.setViewState({ type: VIEW_TYPE, active: false });
+      await leaf.setViewState({
+        type: VIEW_TYPE,
+        active: false,
+        state: folderPath ? { initialCwd: folderPath } : undefined,
+      });
     }
   }
 
-  async toggleTerminalSide() {
+  private registerNotebookNavigatorMenus() {
+    const nnPlugin = (this.app as any).plugins?.plugins?.["notebook-navigator"];
+    if (!nnPlugin?.api) return;
+
+    // Notebook Navigator uses a Symbol key for its internal API.
+    // Find it by looking for the symbol with the expected description.
+    const apiKeys = Object.getOwnPropertySymbols(nnPlugin.api);
+    const internalKey = apiKeys.find(
+      (s) => String(s).includes("NotebookNavigatorInternalAPI")
+    );
+    if (!internalKey) return;
+
+    const internal = nnPlugin.api[internalKey];
+    if (!internal?.menus) return;
+
+    // Register "Open terminal here" for files
+    internal.menus.registerFileMenu((ctx: { addItem: (cb: (item: any) => void) => void; file: TFile }) => {
+      const folder = ctx.file.parent;
+      if (!folder) return;
+      ctx.addItem((item: any) => {
+        item
+          .setTitle("Open terminal here")
+          .setIcon("terminal")
+          .onClick(() => this.toggleTerminalSide(folder.path));
+      });
+    });
+
+    // Register "Open terminal here" for folders
+    internal.menus.registerFolderMenu((ctx: { addItem: (cb: (item: any) => void) => void; folder: TFolder }) => {
+      ctx.addItem((item: any) => {
+        item
+          .setTitle("Open terminal here")
+          .setIcon("terminal")
+          .onClick(() => this.toggleTerminalSide(ctx.folder.path));
+      });
+    });
+  }
+
+  async toggleTerminalSide(folderPath?: string) {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
     if (existing.length > 0) {
-      // If it's already visible/active, hide the sidebar. Otherwise reveal it.
       const leaf = existing[0];
+      const view = leaf.view as TerminalView;
+
+      if (folderPath) {
+        // Open a new session in the specified folder
+        view.createSession(undefined, folderPath);
+        this.app.workspace.revealLeaf(leaf);
+        return;
+      }
+
+      // If it's already visible/active, hide the sidebar. Otherwise reveal it.
       const isVisible = leaf.view.containerEl.isShown();
       if (isVisible) {
         // Check if it's the active leaf in the right split
@@ -2083,16 +2163,20 @@ export default class TerminalPlugin extends Plugin {
       this.app.workspace.revealLeaf(leaf);
       return;
     }
-    await this.ensureLeaf();
+    await this.ensureLeaf(folderPath);
     const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
     if (leaves.length > 0) {
       this.app.workspace.revealLeaf(leaves[0]);
     }
   }
 
-  async openTerminalTab() {
+  async openTerminalTab(folderPath?: string) {
     const leaf = this.app.workspace.getLeaf("tab");
-    await leaf.setViewState({ type: VIEW_TYPE, active: true });
+    await leaf.setViewState({
+      type: VIEW_TYPE,
+      active: true,
+      state: folderPath ? { initialCwd: folderPath } : undefined,
+    });
     this.app.workspace.revealLeaf(leaf);
   }
 
