@@ -2064,7 +2064,7 @@ export default class TerminalPlugin extends Plugin {
       callback: () => new ShortcutsModal(this.app).open(),
     });
 
-    // "Open terminal here" in folder context menu
+    // "Open terminal here" in file/folder context menus (native Obsidian)
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu: Menu, file) => {
         const folder = file instanceof TFolder ? file : file.parent;
@@ -2077,6 +2077,11 @@ export default class TerminalPlugin extends Plugin {
         });
       })
     );
+
+    // "Open terminal here" in Notebook Navigator menus
+    this.app.workspace.onLayoutReady(() => {
+      this.registerNotebookNavigatorMenus();
+    });
 
     // Ensure a terminal leaf exists in the right sidebar on startup
     this.app.workspace.onLayoutReady(() => this.ensureLeaf());
@@ -2092,6 +2097,44 @@ export default class TerminalPlugin extends Plugin {
         state: folderPath ? { initialCwd: folderPath } : undefined,
       });
     }
+  }
+
+  private registerNotebookNavigatorMenus() {
+    const nnPlugin = (this.app as any).plugins?.plugins?.["notebook-navigator"];
+    if (!nnPlugin?.api) return;
+
+    // Notebook Navigator uses a Symbol key for its internal API.
+    // Find it by looking for the symbol with the expected description.
+    const apiKeys = Object.getOwnPropertySymbols(nnPlugin.api);
+    const internalKey = apiKeys.find(
+      (s) => String(s).includes("NotebookNavigatorInternalAPI")
+    );
+    if (!internalKey) return;
+
+    const internal = nnPlugin.api[internalKey];
+    if (!internal?.menus) return;
+
+    // Register "Open terminal here" for files
+    internal.menus.registerFileMenu((ctx: { addItem: (cb: (item: any) => void) => void; file: TFile }) => {
+      const folder = ctx.file.parent;
+      if (!folder) return;
+      ctx.addItem((item: any) => {
+        item
+          .setTitle("Open terminal here")
+          .setIcon("terminal")
+          .onClick(() => this.toggleTerminalSide(folder.path));
+      });
+    });
+
+    // Register "Open terminal here" for folders
+    internal.menus.registerFolderMenu((ctx: { addItem: (cb: (item: any) => void) => void; folder: TFolder }) => {
+      ctx.addItem((item: any) => {
+        item
+          .setTitle("Open terminal here")
+          .setIcon("terminal")
+          .onClick(() => this.toggleTerminalSide(ctx.folder.path));
+      });
+    });
   }
 
   async toggleTerminalSide(folderPath?: string) {
