@@ -234,6 +234,7 @@ class WikiLinkAutocomplete {
             this.filterResults();
             return false;
           }
+          if (e.metaKey || e.ctrlKey) return true;
           return false;
       }
     });
