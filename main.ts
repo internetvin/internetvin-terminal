@@ -1,10 +1,20 @@
-import { Plugin, ItemView, WorkspaceLeaf, App, TFile, setIcon, SuggestModal, Modal, Menu } from "obsidian";
+import { Plugin, PluginSettingTab, Setting, ItemView, WorkspaceLeaf, App, TFile, setIcon, SuggestModal, Modal, Menu } from "obsidian";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import type { ChildProcess } from "child_process";
 
 const VIEW_TYPE = "vin-terminal-view";
 let ptyHelperPath = "";
+
+interface VinTerminalSettings {
+  transparentBackground: boolean;
+}
+
+const DEFAULT_SETTINGS: VinTerminalSettings = {
+  transparentBackground: false,
+};
+
+let vinTerminalSettings: VinTerminalSettings = { ...DEFAULT_SETTINGS };
 
 const PTY_HELPER_PY = `\
 """PTY helper for vin-terminal. Wraps zsh in a real PTY with resize support."""
@@ -97,7 +107,9 @@ function getObsidianTheme(): Record<string, string> {
   const get = (v: string) => s.getPropertyValue(v).trim();
   const isDark = document.body.classList.contains("theme-dark");
 
-  const bg = get("--background-primary") || (isDark ? "#1e1e1e" : "#ffffff");
+  const bg = vinTerminalSettings.transparentBackground
+    ? "transparent"
+    : (get("--background-primary") || (isDark ? "#1e1e1e" : "#ffffff"));
   const fg = get("--text-normal") || (isDark ? "#dcddde" : "#1a1a1a");
   const accent = get("--interactive-accent") || (isDark ? "#7f6df2" : "#705dcf");
   const muted = get("--text-muted") || (isDark ? "#999" : "#666");
@@ -145,7 +157,9 @@ function getObsidianTheme(): Record<string, string> {
     background: bg,
     foreground: fg,
     cursor: muted,
-    cursorAccent: bg,
+    cursorAccent: vinTerminalSettings.transparentBackground
+      ? (isDark ? "#1e1e1e" : "#ffffff")
+      : bg,
     selectionBackground: isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)",
     selectionForeground: isDark ? "#f0f0f0" : "#1a1a1a",
     ...ansi,
@@ -743,6 +757,7 @@ class TerminalSession {
       fontWeight: "400",
       fontWeightBold: "600",
       theme: getObsidianTheme(),
+      allowTransparency: vinTerminalSettings.transparentBackground,
       allowProposedApi: true,
     });
 
@@ -1182,6 +1197,7 @@ class FullscreenManager {
 
     // Append to body
     document.body.appendChild(this.overlay);
+    document.body.classList.add("vin-fullscreen-active");
 
     // Animate in
     requestAnimationFrame(() => this.overlay?.classList.add("is-visible"));
@@ -1206,7 +1222,10 @@ class FullscreenManager {
 
     // Remove overlay after fade animation
     const overlay = this.overlay;
-    setTimeout(() => overlay.remove(), 150);
+    setTimeout(() => {
+      overlay.remove();
+      document.body.classList.remove("vin-fullscreen-active");
+    }, 150);
 
     // Clear refs immediately so re-entry works
     this.overlay = null;
@@ -1942,10 +1961,48 @@ class OutputCaptureModal extends SuggestModal<CaptureOption> {
   }
 }
 
+// --- Settings Tab ---
+
+class TerminalSettingTab extends PluginSettingTab {
+  plugin: TerminalPlugin;
+
+  constructor(app: App, plugin: TerminalPlugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  display(): void {
+    const { containerEl } = this;
+    containerEl.empty();
+    containerEl.createEl("h2", { text: "Terminal Settings" });
+
+    new Setting(containerEl)
+      .setName("Transparent background")
+      .setDesc(
+        "Use a transparent background so the terminal inherits its host panel's background. " +
+        "Best for translucent themes. Requires reload to take full effect."
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(vinTerminalSettings.transparentBackground)
+          .onChange(async (value) => {
+            vinTerminalSettings.transparentBackground = value;
+            await this.plugin.saveData(vinTerminalSettings);
+            this.plugin.applyTransparency();
+          })
+      );
+  }
+}
+
 // --- Plugin ---
 
 export default class TerminalPlugin extends Plugin {
   async onload() {
+    // Load settings
+    await this.loadSettings();
+    this.addSettingTab(new TerminalSettingTab(this.app, this));
+    this.applyTransparency();
+
     // Ensure pty-helper.py exists in the plugin directory.
     // BRAT and Obsidian's plugin installer only copy main.js, manifest.json,
     // and styles.css, so we write it ourselves on every load.
@@ -2097,7 +2154,31 @@ export default class TerminalPlugin extends Plugin {
     this.app.workspace.revealLeaf(leaf);
   }
 
+  async loadSettings() {
+    vinTerminalSettings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  applyTransparency() {
+    if (vinTerminalSettings.transparentBackground) {
+      document.body.classList.add("vin-terminal-transparent");
+    } else {
+      document.body.classList.remove("vin-terminal-transparent");
+    }
+    // Update existing terminal sessions
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+    for (const leaf of leaves) {
+      const view = leaf.view as TerminalView;
+      if (view.sessions) {
+        for (const s of view.sessions) {
+          s.terminal.options.theme = getObsidianTheme();
+          s.terminal.options.allowTransparency = vinTerminalSettings.transparentBackground;
+        }
+      }
+    }
+  }
+
   async onunload() {
+    document.body.classList.remove("vin-terminal-transparent");
     this.app.workspace.detachLeavesOfType(VIEW_TYPE);
   }
 }
